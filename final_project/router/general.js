@@ -4,88 +4,77 @@ let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
+// 1. Register a new user
+public_users.post("/register", (req, res) => {
+  const { username, password } = req.body;
 
-public_users.post("/register", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+  if (!username || !password) {
+    return res.status(400).json({ message: "Username and password are required" });
+  }
+
+  if (isValid(username)) {
+    return res.status(409).json({ message: "Username already exists" });
+  }
+
+  users.push({ username, password });
+  return res.status(201).json({ message: "User registered successfully" });
 });
 
-// Get the book list available in the shop
-public_users.get('/',function (req, res) {
-    res.send(books);
+// 2. Get the book list available in the shop
+public_users.get('/', (req, res) => {
+  return res.status(200).json(books);
 });
 
-// Get book details based on ISBN
+// 3. Get book details based on ISBN
+public_users.get('/isbn/:isbn', (req, res) => {
+  const isbn = req.params.isbn;
+  const book = books[isbn];
 
-public_users.get('/isbn/:isbn', function (req, res) {
-    const isbn = req.params.isbn;
+  if (!book) {
+    return res.status(404).json({ message: "Book not found" });
+  }
 
-    // Since book keys are numbers, convert isbn to string to safely check
-    const book = books[isbn];
-
-    if (book) {
-        res.status(200).json(book);
-    } else {
-        res.status(404).json({ message: "Book not found" });
-    }
+  return res.status(200).json(book);
 });
 
-// Get book details based on author
+// 4. Get book details based on author
+public_users.get('/author/:author', (req, res) => {
+  const author = req.params.author.toLowerCase();
+  const filteredBooks = Object.values(books).filter(book =>
+    book.author.toLowerCase().includes(author)
+  );
 
-public_users.get('/author/:author', function (req, res) {
-    const requestedAuthor = req.params.author.toLowerCase(); // 1. Get the author from request
-    const matchingBooks = [];
+  if (filteredBooks.length === 0) {
+    return res.status(404).json({ message: "No books found by this author" });
+  }
 
-    // 2. Iterate through the books object
-    for (let key in books) {
-        const book = books[key];
-        if (book.author.toLowerCase() === requestedAuthor) {
-            matchingBooks.push(book);
-        }
-    }
-
-    // 3. Send the response
-    if (matchingBooks.length > 0) {
-        res.status(200).json({ books: matchingBooks });
-    } else {
-        res.status(404).json({ message: "No books found by this author" });
-    }
+  return res.status(200).json(filteredBooks);
 });
 
-// Get all books based on title
-public_users.get('/title/:title', function (req, res) {
-    const requestedTitle = req.params.title.toLowerCase(); // Get title from request
-    const matchingBooks = [];
+// 5. Get book details based on title
+public_users.get('/title/:title', (req, res) => {
+  const title = req.params.title.toLowerCase();
+  const filteredBooks = Object.values(books).filter(book =>
+    book.title.toLowerCase().includes(title)
+  );
 
-    // Loop through all books
-    for (let key in books) {
-        const book = books[key];
-        if (book.title.toLowerCase() === requestedTitle) {
-            matchingBooks.push(book);
-        }
-    }
+  if (filteredBooks.length === 0) {
+    return res.status(404).json({ message: "No books found with this title" });
+  }
 
-    // Send result
-    if (matchingBooks.length > 0) {
-        res.status(200).json({ books: matchingBooks });
-    } else {
-        res.status(404).json({ message: "No books found with this title" });
-    }
+  return res.status(200).json(filteredBooks);
 });
 
+// 6. Get book review
+public_users.get('/review/:isbn', (req, res) => {
+  const isbn = req.params.isbn;
+  const book = books[isbn];
 
-//  Get book review
-public_users.get('/review/:isbn', function (req, res) {
-    const isbn = req.params.isbn; // Get ISBN from route
+  if (!book) {
+    return res.status(404).json({ message: "Book not found" });
+  }
 
-    const book = books[isbn];
-
-    if (book) {
-        res.status(200).json({ reviews: book.reviews });
-    } else {
-        res.status(404).json({ message: "Book not found" });
-    }
+  return res.status(200).json(book.reviews);
 });
-
 
 module.exports.general = public_users;

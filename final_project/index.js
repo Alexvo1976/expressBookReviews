@@ -1,22 +1,22 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const session = require('express-session')
-const customer_routes = require('./router/auth_users.js').authenticated;
-const genl_routes = require('./router/general.js').general;
-
+const session = require('express-session');
 const app = express();
 
 app.use(express.json());
 
-app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
+app.use(session({
+  secret: "fingerprint_customer",
+  resave: true,
+  saveUninitialized: true
+}));
 
-app.use("/customer/auth/*", function auth(req,res,next){
-//Write the authenication mechanism here
-});
- 
-const PORT =5001;
+let books = require("./router/booksdb.js");
+const gen_routes = require("./router/general.js").general;
+const auth_routes = require("./router/auth_users.js").authenticated;
 
-app.use("/customer", customer_routes);
-app.use("/", genl_routes);
+app.use("/customer", auth_routes);
+app.use("/", gen_routes);
 
-app.listen(PORT,()=>console.log("Server is running"));
+const PORT = 5001;
+
+app.listen(PORT, () => console.log("Server is running on port", PORT));

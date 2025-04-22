@@ -4,68 +4,83 @@ let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
-// 1. Register a new user
-public_users.post("/register", (req, res) => {
-  const { username, password } = req.body;
+// Simulate async behavior using Promises
+const getBooks = () => {
+  return new Promise((resolve, reject) => {
+    resolve(books);
+  });
+};
 
-  if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required" });
+const getBookByISBN = (isbn) => {
+  return new Promise((resolve, reject) => {
+    const book = books[isbn];
+    if (book) {
+      resolve(book);
+    } else {
+      reject("Book not found");
+    }
+  });
+};
+
+const getBooksByAuthor = (author) => {
+  return new Promise((resolve, reject) => {
+    const filteredBooks = Object.values(books).filter(book =>
+      book.author.toLowerCase().includes(author.toLowerCase())
+    );
+    resolve(filteredBooks);
+  });
+};
+
+const getBooksByTitle = (title) => {
+  return new Promise((resolve, reject) => {
+    const filteredBooks = Object.values(books).filter(book =>
+      book.title.toLowerCase().includes(title.toLowerCase())
+    );
+    resolve(filteredBooks);
+  });
+};
+
+// Task 10: Get all books (Async/Await)
+public_users.get('/', async (req, res) => {
+  try {
+    const allBooks = await getBooks();
+    return res.status(200).json(allBooks);
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to retrieve books" });
   }
-
-  if (isValid(username)) {
-    return res.status(409).json({ message: "Username already exists" });
-  }
-
-  users.push({ username, password });
-  return res.status(201).json({ message: "User registered successfully" });
 });
 
-// 2. Get the book list available in the shop
-public_users.get('/', (req, res) => {
-  return res.status(200).json(books);
-});
-
-// 3. Get book details based on ISBN
-public_users.get('/isbn/:isbn', (req, res) => {
-  const isbn = req.params.isbn;
-  const book = books[isbn];
-
-  if (!book) {
-    return res.status(404).json({ message: "Book not found" });
+// Task 11: Get book by ISBN (Async/Await)
+public_users.get('/isbn/:isbn', async (req, res) => {
+  try {
+    const book = await getBookByISBN(req.params.isbn);
+    return res.status(200).json(book);
+  } catch (error) {
+    return res.status(404).json({ message: error });
   }
-
-  return res.status(200).json(book);
 });
 
-// 4. Get book details based on author
-public_users.get('/author/:author', (req, res) => {
-  const author = req.params.author.toLowerCase();
-  const filteredBooks = Object.values(books).filter(book =>
-    book.author.toLowerCase().includes(author)
-  );
-
-  if (filteredBooks.length === 0) {
-    return res.status(404).json({ message: "No books found by this author" });
+// Task 12: Get books by author (Async/Await)
+public_users.get('/author/:author', async (req, res) => {
+  try {
+    const booksByAuthor = await getBooksByAuthor(req.params.author);
+    return res.status(200).json(booksByAuthor);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving books by author" });
   }
-
-  return res.status(200).json(filteredBooks);
 });
 
-// 5. Get book details based on title
-public_users.get('/title/:title', (req, res) => {
-  const title = req.params.title.toLowerCase();
-  const filteredBooks = Object.values(books).filter(book =>
-    book.title.toLowerCase().includes(title)
-  );
-
-  if (filteredBooks.length === 0) {
-    return res.status(404).json({ message: "No books found with this title" });
+// Task 13: Get books by title (Async/Await)
+public_users.get('/title/:title', async (req, res) => {
+  try {
+    const booksByTitle = await getBooksByTitle(req.params.title);
+    return res.status(200).json(booksByTitle);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving books by title" });
   }
-
-  return res.status(200).json(filteredBooks);
 });
 
-// 6. Get book review
+// Reviews route remains synchronous (optional to refactor)
 public_users.get('/review/:isbn', (req, res) => {
   const isbn = req.params.isbn;
   const book = books[isbn];
